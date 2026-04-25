@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คำนวณค่าใช้จ่ายการศึกษาลูก</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1f2937;
+    --border: #30363d;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --accent3: #10b981;
+    --accent4: #8b5cf6;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --danger: #ef4444;
+    --card-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sarabun', sans-serif;
+    min-height: 100vh;
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(245,158,11,0.05) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 20%, rgba(59,130,246,0.05) 0%, transparent 50%);
+  }
+
+  .header {
+    background: linear-gradient(135deg, #1a1f2e 0%, #161b22 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 32px 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(245,158,11,0.03), transparent);
+    animation: shimmer 4s infinite;
+  }
+  @keyframes shimmer { 0%,100%{opacity:0} 50%{opacity:1} }
+
+  .header h1 {
+    font-family: 'Prompt', sans-serif;
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), #fbbf24, var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .header p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 300;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 32px 16px;
+  }
+
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: var(--card-shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .section-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .card-primary::before { background: linear-gradient(90deg, var(--accent), #fbbf24); }
+  .card-elem::before { background: linear-gradient(90deg, var(--accent3), #34d399); }
+  .card-middle::before { background: linear-gradient(90deg, var(--accent2), #60a5fa); }
+  .card-high::before { background: linear-gradient(90deg, var(--accent4), #a78bfa); }
+  .card-voc::before { background: linear-gradient(90deg, #f97316, #fb923c); }
+  .card-uni::before { background: linear-gradient(90deg, #ec4899, #f472b6); }
+  .card-result::before { background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3), var(--accent4)); }
+
+  .section-title {
+    font-family: 'Prompt', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+
+  .global-settings {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field-group label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+  .field-group input, .field-group select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  .field-group input:focus, .field-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+  }
+
+  .grade-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+
+  .grade-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .grade-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+  .grade-input-wrap {
+    position: relative;
+  }
+  .grade-input-wrap input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 42px 9px 12px;
+    color: var(--text);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.9rem;
+    width: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .grade-input-wrap input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.12);
+  }
+  .grade-input-wrap .unit {
+    position: absolute;
+    right: 10px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .btn-calculate {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #fbbf24);
+    color: #0d1117;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Prompt', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    letter-spacing: 0.02em;
+    box-shadow: 0 4px 20px rgba(245,158,11,0.3);
+  }
+  .btn-calculate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(245,158,11,0.4);
+  }
+  .btn-calculate:active { transform: translateY(0); }
+
+  .result-hidden { display: none; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .summary-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .summary-box .s-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .summary-box .s-value {
+    font-family: 'Prompt', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  .summary-box .s-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .phase-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .phase-row {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .phase-row .p-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .phase-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .phase-row .p-amount {
+    font-family: 'Prompt', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .phase-row .p-years {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .year-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  .year-table th {
+    background: var(--surface2);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+  }
+  .year-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(48,54,61,0.6);
+  }
+  .year-table tr:last-child td { border-bottom: none; }
+  .year-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+
+  .chart-wrap {
+    margin-bottom: 24px;
+  }
+  .chart-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .chart-label {
+    font-size: 0.8rem;
+    width: 80px;
+    text-align: right;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .chart-bar-bg {
+    flex: 1;
+    height: 24px;
+    background: var(--surface2);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .chart-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    display: flex; align-items: center;
+    padding-left: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0d1117;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .chart-amount {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    width: 100px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .tip-box {
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 0.85rem;
+    color: #fcd34d;
+    margin-top: 20px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+
+  .toggle-table {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: var(--text-muted);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 14px;
+  }
+  .toggle-table:hover { border-color: var(--accent); color: var(--accent); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  @media (max-width: 600px) {
+    .grade-grid { grid-template-columns: repeat(2, 1fr); }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .fade-in { animation: fadeIn 0.5s ease forwards; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input[type=number] { -moz-appearance: textfield; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📚 คำนวณค่าใช้จ่ายการศึกษาลูก</h1>
+  <p>วางแผนการเงินสำหรับการศึกษาบุตรหลาน ตั้งแต่ประถมถึงปริญญาตรี</p>
+</div>
+
+<div class="container">
+
+  <!-- Global Settings -->
+  <div class="section-card card-primary">
+    <div class="section-title">
+      <div class="section-icon" style="background:rgba(245,158,11,0.15)">⚙️</div>
+      ตั้งค่าทั่วไป
+    </div>
+    <div class="global-settings">
+      <div class="field-group">
+        <label>อายุของลูกในปัจจุบัน (ปี)</label>
+        <input type="number" id="childAge" value="3" min="0" max="20" placeholder="เช่น 3">
+      </div>
+      <div class="field-group">
+        <label>อัตราเงินเฟ้อต่อปี (%)</label>
+        <input type="number" id="inflationRate" value="3" min="0" max="20" step="0.1" placeholder="เช่น 3">
+      </div>
+      <div class="field-group">
+        <label>ระดับการศึกษาสูงสุด</label>
+        <select id="maxEducation">
+          <option value="elem">ประถมศึกษา</option>
+          <option value="middle">มัธยมต้น (ม.1–3)</option>
+          <option value="high">มัธยมปลาย (ม.4–6)</option>
+          <option value="voc">ปวส. (ต่อจากมัธยมปลาย)</option>
+          <option value="uni" selected>ปริญญาตรี (4 ปี)</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>เส้นทางหลังมัธยมปลาย</label>
+        <select id="postHighPath">
+          <option value="uni">มหาวิทยาลัย (ป.ตรี)</option>
+          <option value="pvc_pvo">ปวช. → ปวส.</option>
+          <option value="high_voc">ปวส. (ต่อจากมัธยมปลาย)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ประถม -->
+  <div class="section-card card-elem">
+    <div class="section-title">
+      <div class="section-icon" style="background:rgba(16,185,129,0.15)">🏫</div>
+      ประถมศึกษา (ป.1–6) — 6 ปี
+    </div>
+    <div class="grade-grid" id="elemGrid"></div>
+  </div>
+
+  <!-- มัธยมต้น -->
+  <div class="section-card card-middle" id="middleCard">
+    <div class="section-title">
+      <div class="section-icon" style="background:rgba(59,130,246,0.15)">📖</div>
+      มัธยมศึกษาตอนต้น (ม.1–3) — 3 ปี
+    </div>
+    <div class="grade-grid" id="middleGrid"></div>
+  </div>
+
+  <!-- มัธยมปลาย -->
+  <div class="section-card card-high" id="highCard">
+    <div class="section-title">
+      <div class="section-icon" style="background:rgba(139,92,246,0.15)">🎓</div>
+      มัธยมศึกษาตอนปลาย (ม.4–6) — 3 ปี
+    </div>
+    <div class="grade-grid" id="highGrid"></div>
+  </div>
+
+  <!-- ปวช. -->
+  <div class="section-card card-voc" id="pvcCard" style="display:none">
+    <div class="section-title">
+      <div class="section-icon" style="background:rgba(249,115,22,0.15)">🔧</div>
+      ปวช. (ปีที่ 1–3) — 3 ปี
+    </div>
+    <div class="grade-grid" id="pvcGrid"></div>
+  </div>
+
+  <!-- ปวส. -->
+  <div class="section-card card-voc" id="pvoCard" style="display:none">
+    <div class="section-title">
+      <div class="section-icon" style="background:rgba(249,115,22,0.15)">🛠️</div>
+      ปวส. (ปีที่ 1–2) — 2 ปี
+    </div>
+    <div class="grade-grid" id="pvoGrid"></div>
+  </div>
+
+  <!-- ปริญญาตรี -->
+  <div class="section-card card-uni" id="uniCard">
+    <div class="section-title">
+      <div class="section-icon" style="background:rgba(236,72,153,0.15)">🏛️</div>
+      ปริญญาตรี (ปีที่ 1–4) — 4 ปี
+    </div>
+    <div class="grade-grid" id="uniGrid"></div>
+  </div>
+
+  <!-- Calculate Button -->
+  <button class="btn-calculate" onclick="calculate()">
+    🧮 คำนวณค่าใช้จ่ายทั้งหมด
+  </button>
+
+  <!-- Results -->
+  <div id="resultSection" class="result-hidden" style="margin-top:28px">
+    <div class="section-card card-result fade-in">
+      <div class="section-title" style="font-size:1.2rem">
+        <div class="section-icon" style="background:rgba(245,158,11,0.15)">📊</div>
+        สรุปผลการคำนวณ
+      </div>
+
+      <div class="summary-grid" id="summaryGrid"></div>
+
+      <div class="divider"></div>
+
+      <div style="margin-bottom:16px">
+        <div class="section-title" style="font-size:1rem;margin-bottom:14px">
+          <div class="section-icon" style="background:rgba(59,130,246,0.15); font-size:0.85rem">📈</div>
+          ค่าใช้จ่ายแต่ละช่วงการศึกษา
+        </div>
+        <div class="phase-breakdown" id="phaseBreakdown"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="chart-wrap">
+        <div class="section-title" style="font-size:1rem;margin-bottom:14px">
+          <div class="section-icon" style="background:rgba(16,185,129,0.15); font-size:0.85rem">📉</div>
+          สัดส่วนค่าใช้จ่ายแต่ละช่วง
+        </div>
+        <div id="barChart"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <button class="toggle-table" onclick="toggleTable()">📋 แสดง/ซ่อน ตารางค่าใช้จ่ายรายปี</button>
+      <div id="yearTableWrap" style="display:none">
+        <div class="table-wrap">
+          <table class="year-table">
+            <thead>
+              <tr>
+                <th>ปีที่</th>
+                <th>ปีปฏิทิน</th>
+                <th>ช่วงการศึกษา</th>
+                <th>ชั้นปี</th>
+                <th>ค่าเทอม (ปัจจุบัน)</th>
+                <th>ค่าเทอมจริง (มีเงินเฟ้อ)</th>
+              </tr>
+            </thead>
+            <tbody id="yearTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        💡 <span>หากต้องการออมเงินให้เพียงพอ ควรออมประมาณ <strong id="monthlySave">—</strong> บาท/เดือนโดยประมาณ (สมมติผลตอบแทนการลงทุน 5% ต่อปี)</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===== Setup Grade Inputs =====
+const gradeData = {
+  elem: [
+    {id:'p1',label:'ป.1'},{id:'p2',label:'ป.2'},{id:'p3',label:'ป.3'},
+    {id:'p4',label:'ป.4'},{id:'p5',label:'ป.5'},{id:'p6',label:'ป.6'}
+  ],
+  middle: [
+    {id:'m1',label:'ม.1'},{id:'m2',label:'ม.2'},{id:'m3',label:'ม.3'}
+  ],
+  high: [
+    {id:'m4',label:'ม.4'},{id:'m5',label:'ม.5'},{id:'m6',label:'ม.6'}
+  ],
+  pvc: [
+    {id:'pvc1',label:'ปวช.ปี 1'},{id:'pvc2',label:'ปวช.ปี 2'},{id:'pvc3',label:'ปวช.ปี 3'}
+  ],
+  pvo: [
+    {id:'pvo1',label:'ปวส.ปี 1'},{id:'pvo2',label:'ปวส.ปี 2'}
+  ],
+  uni: [
+    {id:'u1',label:'ป.ตรี ปี 1'},{id:'u2',label:'ป.ตรี ปี 2'},
+    {id:'u3',label:'ป.ตรี ปี 3'},{id:'u4',label:'ป.ตรี ปี 4'}
+  ]
+};
+
+const defaultValues = {
+  p1:15000,p2:15000,p3:15000,p4:15000,p5:15000,p6:15000,
+  m1:20000,m2:20000,m3:20000,
+  m4:25000,m5:25000,m6:25000,
+  pvc1:18000,pvc2:18000,pvc3:18000,
+  pvo1:22000,pvo2:22000,
+  u1:30000,u2:30000,u3:30000,u4:30000
+};
+
+function buildGrid(containerId, grades) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  grades.forEach(g => {
+    el.innerHTML += `
+      <div class="grade-item">
+        <div class="grade-label">${g.label}</div>
+        <div class="grade-input-wrap">
+          <input type="number" id="${g.id}" value="${defaultValues[g.id] || 20000}" placeholder="0">
+          <span class="unit">บ./ปี</span>
+        </div>
+      </div>`;
+  });
+}
+
+buildGrid('elemGrid', gradeData.elem);
+buildGrid('middleGrid', gradeData.middle);
+buildGrid('highGrid', gradeData.high);
+buildGrid('pvcGrid', gradeData.pvc);
+buildGrid('pvoGrid', gradeData.pvo);
+buildGrid('uniGrid', gradeData.uni);
+
+// ===== Visibility Control =====
+const pathColors = {
+  elem: '#10b981', middle: '#3b82f6', high: '#8b5cf6',
+  pvc: '#f97316', pvo: '#f97316', uni: '#ec4899'
+};
+
+function updateVisibility() {
+  const max = document.getElementById('maxEducation').value;
+  const path = document.getElementById('postHighPath').value;
+
+  document.getElementById('middleCard').style.display = ['elem'].includes(max) ? 'none' : '';
+  document.getElementById('highCard').style.display = ['elem','middle'].includes(max) ? 'none' : '';
+  document.getElementById('pvcCard').style.display = (path === 'pvc_pvo' && !['elem','middle','high','voc'].includes(max)) ? '' : 'none';
+  document.getElementById('pvoCard').style.display = (path !== 'uni' && !['elem','middle','high'].includes(max)) ? '' : 'none';
+  document.getElementById('uniCard').style.display = (path === 'uni' && max === 'uni') ? '' : 'none';
+}
+
+document.getElementById('maxEducation').addEventListener('change', updateVisibility);
+document.getElementById('postHighPath').addEventListener('change', updateVisibility);
+updateVisibility();
+
+// ===== Helpers =====
+function fmt(n) { return Math.round(n).toLocaleString('th-TH'); }
+
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? (parseFloat(el.value) || 0) : 0;
+}
+
+// ===== Calculate =====
+function calculate() {
+  const childAge = parseFloat(document.getElementById('childAge').value) || 0;
+  const inflation = parseFloat(document.getElementById('inflationRate').value) / 100 || 0;
+  const max = document.getElementById('maxEducation').value;
+  const path = document.getElementById('postHighPath').value;
+  const currentYear = new Date().getFullYear();
+
+  // Age when each phase starts
+  const phaseStartAge = { elem: 6, middle: 12, high: 15, pvc: 15, pvo: 18, uni: 18 };
+
+  // Build schedule based on selection
+  let schedule = [];
+
+  // Elem always
+  gradeData.elem.forEach((g, i) => {
+    schedule.push({ phase: 'elem', label: g.label, gradeId: g.id, ageOffset: phaseStartAge.elem + i });
+  });
+
+  if (!['elem'].includes(max)) {
+    gradeData.middle.forEach((g, i) => {
+      schedule.push({ phase: 'middle', label: g.label, gradeId: g.id, ageOffset: phaseStartAge.middle + i });
+    });
+  }
+
+  if (!['elem', 'middle'].includes(max)) {
+    gradeData.high.forEach((g, i) => {
+      schedule.push({ phase: 'high', label: g.label, gradeId: g.id, ageOffset: phaseStartAge.high + i });
+    });
+  }
+
+  if (!['elem', 'middle', 'high'].includes(max)) {
+    if (path === 'pvc_pvo') {
+      gradeData.pvc.forEach((g, i) => {
+        schedule.push({ phase: 'pvc', label: g.label, gradeId: g.id, ageOffset: 15 + i });
+      });
+      gradeData.pvo.forEach((g, i) => {
+        schedule.push({ phase: 'pvo', label: g.label, gradeId: g.id, ageOffset: 18 + i });
+      });
+    } else if (path === 'high_voc') {
+      gradeData.pvo.forEach((g, i) => {
+        schedule.push({ phase: 'pvo', label: g.label, gradeId: g.id, ageOffset: 18 + i });
+      });
+    } else if (path === 'uni' && max === 'uni') {
+      gradeData.uni.forEach((g, i) => {
+        schedule.push({ phase: 'uni', label: g.label, gradeId: g.id, ageOffset: 18 + i });
+      });
+    }
+  }
+
+  // Compute rows
+  const phaseNames = { elem:'ประถมศึกษา', middle:'มัธยมต้น', high:'มัธยมปลาย', pvc:'ปวช.', pvo:'ปวส.', uni:'ปริญญาตรี' };
+  const phaseTotals = {};
+  const rows = [];
+  let grandTotal = 0;
+
+  schedule.forEach(item => {
+    const baseCost = getVal(item.gradeId);
+    const yearsFromNow = item.ageOffset - childAge;
+    const inflatedCost = yearsFromNow > 0 ? baseCost * Math.pow(1 + inflation, yearsFromNow) : baseCost;
+    const calYear = currentYear + Math.max(0, yearsFromNow);
+
+    rows.push({
+      yearOffset: Math.max(0, yearsFromNow),
+      calYear,
+      phase: item.phase,
+      phaseName: phaseNames[item.phase],
+      gradeLabel: item.label,
+      baseCost,
+      inflatedCost
+    });
+
+    if (!phaseTotals[item.phase]) phaseTotals[item.phase] = { base: 0, inflated: 0, years: 0 };
+    phaseTotals[item.phase].base += baseCost;
+    phaseTotals[item.phase].inflated += inflatedCost;
+    phaseTotals[item.phase].years++;
+    grandTotal += inflatedCost;
+  });
+
+  // ===== Render =====
+  document.getElementById('resultSection').classList.remove('result-hidden');
+  document.getElementById('resultSection').classList.add('fade-in');
+
+  // Summary
+  const totalBase = schedule.reduce((s, item) => s + getVal(item.gradeId), 0);
+  const inflationImpact = grandTotal - totalBase;
+  const totalYears = schedule.length;
+  const firstYear = rows.length > 0 ? rows[0].calYear : currentYear;
+
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-box">
+      <div class="s-label">ค่าใช้จ่ายรวม (ปัจจุบัน)</div>
+      <div class="s-value" style="color:var(--accent2)">${fmt(totalBase)}</div>
+      <div class="s-sub">บาท (ราคาวันนี้)</div>
+    </div>
+    <div class="summary-box">
+      <div class="s-label">ค่าใช้จ่ายรวม (มีเงินเฟ้อ)</div>
+      <div class="s-value" style="color:var(--accent)">${fmt(grandTotal)}</div>
+      <div class="s-sub">บาท (ราคาจริงที่ต้องจ่าย)</div>
+    </div>
+    <div class="summary-box">
+      <div class="s-label">ผลกระทบจากเงินเฟ้อ</div>
+      <div class="s-value" style="color:var(--danger)">+${fmt(inflationImpact)}</div>
+      <div class="s-sub">บาท เพิ่มขึ้นจากราคาวันนี้</div>
+    </div>
+    <div class="summary-box">
+      <div class="s-label">ระยะเวลาการศึกษา</div>
+      <div class="s-value" style="color:var(--accent3)">${totalYears}</div>
+      <div class="s-sub">ปี (เริ่ม ${firstYear})</div>
+    </div>
+  `;
+
+  // Phase Breakdown
+  const phaseOrder = ['elem','middle','high','pvc','pvo','uni'];
+  const phaseColors = { elem:'#10b981', middle:'#3b82f6', high:'#8b5cf6', pvc:'#f97316', pvo:'#fb923c', uni:'#ec4899' };
+  let phaseHTML = '';
+  phaseOrder.forEach(p => {
+    if (phaseTotals[p]) {
+      phaseHTML += `
+        <div class="phase-row">
+          <div>
+            <div class="p-name">
+              <span class="phase-dot" style="background:${phaseColors[p]}"></span>
+              ${phaseNames[p]}
+            </div>
+            <div class="p-years">${phaseTotals[p].years} ปี</div>
+          </div>
+          <div style="text-align:right">
+            <div class="p-amount">${fmt(phaseTotals[p].inflated)}</div>
+            <div class="p-years">ปัจจุบัน: ${fmt(phaseTotals[p].base)} บ.</div>
+          </div>
+        </div>`;
+    }
+  });
+  document.getElementById('phaseBreakdown').innerHTML = phaseHTML;
+
+  // Bar Chart
+  let chartHTML = '';
+  phaseOrder.forEach(p => {
+    if (phaseTotals[p]) {
+      const pct = grandTotal > 0 ? (phaseTotals[p].inflated / grandTotal * 100) : 0;
+      chartHTML += `
+        <div class="chart-bar-row">
+          <div class="chart-label">${phaseNames[p]}</div>
+          <div class="chart-bar-bg">
+            <div class="chart-bar-fill" style="width:${pct.toFixed(1)}%;background:${phaseColors[p]}">
+              ${pct.toFixed(1)}%
+            </div>
+          </div>
+          <div class="chart-amount">${fmt(phaseTotals[p].inflated)}</div>
+        </div>`;
+    }
+  });
+  document.getElementById('barChart').innerHTML = chartHTML;
+
+  // Year Table
+  const badgeStyle = { elem:'background:rgba(16,185,129,0.15);color:#10b981', middle:'background:rgba(59,130,246,0.15);color:#3b82f6', high:'background:rgba(139,92,246,0.15);color:#8b5cf6', pvc:'background:rgba(249,115,22,0.15);color:#f97316', pvo:'background:rgba(249,115,22,0.15);color:#f97316', uni:'background:rgba(236,72,153,0.15);color:#ec4899' };
+  let tableHTML = '';
+  rows.forEach((r, i) => {
+    tableHTML += `<tr>
+      <td style="color:var(--text-muted)">${i+1}</td>
+      <td style="font-family:'Prompt',sans-serif;font-weight:600">${r.calYear}</td>
+      <td><span class="badge" style="${badgeStyle[r.phase]}">${r.phaseName}</span></td>
+      <td>${r.gradeLabel}</td>
+      <td style="color:var(--text-muted)">${fmt(r.baseCost)}</td>
+      <td style="font-family:'Prompt',sans-serif;font-weight:600;color:var(--accent)">${fmt(r.inflatedCost)}</td>
+    </tr>`;
+  });
+  document.getElementById('yearTableBody').innerHTML = tableHTML;
+
+  // Monthly savings suggestion (PMT-like: FV / ((1+r)^n - 1) * r)
+  const monthlyRate = 0.05 / 12;
+  // Simple average: save each month until each payment
+  // Approximate: total / (months until first payment) with growth
+  const yearsUntilFirst = Math.max(1, rows.length > 0 ? rows[0].yearOffset : 0);
+  const totalMonths = yearsUntilFirst * 12;
+  let monthly = 0;
+  if (monthlyRate > 0 && totalMonths > 0) {
+    // Weight by time: sum of PV of each payment, then find monthly PMT
+    let pvTotal = 0;
+    rows.forEach(r => {
+      const n = Math.max(1, r.yearOffset) * 12;
+      pvTotal += r.inflatedCost / Math.pow(1 + monthlyRate, n);
+    });
+    // Monthly savings needed: PMT(5%/12, months_to_first, -pvTotal) -- approx
+    const n = Math.max(1, rows[0]?.yearOffset || 1) * 12;
+    monthly = pvTotal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -n));
+    // Simpler: just pvTotal divided by months available
+    // Use weighted average months
+    let weightedMonths = 0;
+    rows.forEach(r => { weightedMonths += Math.max(1, r.yearOffset) * 12; });
+    const avgMonths = weightedMonths / rows.length;
+    monthly = pvTotal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -avgMonths));
+  } else {
+    monthly = grandTotal / Math.max(1, totalMonths);
+  }
+
+  document.getElementById('monthlySave').textContent = fmt(monthly);
+
+  document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function toggleTable() {
+  const wrap = document.getElementById('yearTableWrap');
+  wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+</body>
+</html>
